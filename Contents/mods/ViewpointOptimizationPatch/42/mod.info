@@ -1,0 +1,12 @@
+name=Viewpoint Performance Patch
+id=ViewpointOptimizationPatch
+description=Performance & Engine Optimization Patch for Viewpoint Build 42. Prevents Intel iGPU 100% freezes, eliminates glFinish pipeline stalls, auto-tunes hardware on render thread, and optimizes floor texture filtering.
+poster=poster.png
+modversion=1.1.0
+versionMin=42.21
+versionMax=42.21
+require=\ZombieBuddy,\Viewpoint
+loadAfter=\Viewpoint,\ViewpointTurbo
+ZBVersionMin=2.3.0
+javaJarFile=media/java/client/ViewpointOptimizationPatch.jar
+javaPkgName=viewpointpatch
