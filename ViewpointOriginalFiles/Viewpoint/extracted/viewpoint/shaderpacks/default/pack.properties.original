@@ -1,0 +1,153 @@
+name=Default
+author=Viewpoint
+description=The full look: sun shadows through up to three cascades, per-pixel lamps with shadows from the \
+  nearest, a shadowed flashlight, bounce light, volumetric light with god rays, clouds, rain and puddles, glowing far \
+  lamps, bloom and TAA.
+
+options=sunShadows shadowResolution shadowCascades flashlightShadow lampShadows lampShadowResolution farShadows \
+  farLamps volumetrics godrays volumetricSteps clouds cloudResolution cloudSteps bounceLight bloom antialiasing \n  puddles rainDensity
+
+option.sunShadows.label=Sun shadows
+option.sunShadows.tooltip=The sun's and the moon's shadows from the near world.
+option.sunShadows.default=true
+option.sunShadows.preset.potato=false
+
+option.shadowResolution.label=Shadow resolution
+option.shadowResolution.tooltip=Texels a side of each sun cascade: sharper shadows for more video memory and time.
+option.shadowResolution.values=1024 2048 4096 8192
+option.shadowResolution.default=2048
+option.shadowResolution.preset.potato=1024
+option.shadowResolution.preset.high=4096
+option.shadowResolution.preset.ultra=8192
+
+option.shadowCascades.label=Shadow cascades
+option.shadowCascades.tooltip=Sun shadows out to 22 squares with one cascade, 64 with two, the end of the fog with three.
+option.shadowCascades.values=1 2 3
+option.shadowCascades.default=3
+option.shadowCascades.preset.potato=1
+option.shadowCascades.preset.low=2
+
+option.flashlightShadow.label=Flashlight shadows
+option.flashlightShadow.tooltip=What the flashlight's beam falls on casts a shadow (a shadow map of its own).
+option.flashlightShadow.default=true
+option.flashlightShadow.preset.potato=false
+
+option.lampShadows.label=Lamp shadows (nearest lamps)
+option.lampShadows.tooltip=How many of the nearest lamps cast shadows: what stands in a street light's or a lamp's \
+  light (people, cars, furniture, fences) darkens what lies behind it. Each is a cube of shadow maps. Lamps standing \
+  together (a crossing's) cast as a group, so their shadows do not jump from lamp to lamp as you walk.
+option.lampShadows.values=0 2 4 6 8
+option.lampShadows.default=2
+option.lampShadows.preset.potato=0
+option.lampShadows.preset.low=2
+option.lampShadows.preset.high=6
+option.lampShadows.preset.ultra=8
+
+option.lampShadowResolution.label=Lamp shadow resolution
+option.lampShadowResolution.tooltip=Texels a side of each face of a lamp's shadow cube: sharper lamp shadows for more \
+  video memory and time.
+option.lampShadowResolution.values=256 512 1024
+option.lampShadowResolution.default=512
+option.lampShadowResolution.preset.potato=256
+option.lampShadowResolution.preset.low=256
+option.lampShadowResolution.preset.ultra=1024
+
+option.farShadows.label=Far world shadows
+option.farShadows.tooltip=The sun's shadows past the loaded chunks, out to the fog: the far world's buildings and trees, \
+  and the near world's, cast onto each other.
+option.farShadows.default=true
+option.farShadows.preset.potato=false
+option.farShadows.preset.low=false
+
+option.farLamps.label=Far lamps
+option.farLamps.tooltip=Street lights and outdoor lamps past the loaded chunks shine as small glowing points at night.
+option.farLamps.default=true
+
+option.volumetrics.label=Volumetric light
+option.volumetrics.tooltip=Light in the air: haze over distance, lamp halos, the flashlight's beam, dust indoors.
+option.volumetrics.default=true
+option.volumetrics.preset.potato=false
+option.volumetrics.preset.low=false
+
+option.godrays.label=God rays
+option.godrays.tooltip=The sun's shafts through the volumetric light, cut by what stands in them.
+option.godrays.default=true
+option.godrays.preset.potato=false
+option.godrays.preset.low=false
+
+option.volumetricSteps.label=Volumetric quality (steps)
+option.volumetricSteps.tooltip=Steps along each ray through the air: smoother light for more time.
+option.volumetricSteps.values=12 16 24 32 48
+option.volumetricSteps.default=24
+option.volumetricSteps.preset.potato=12
+option.volumetricSteps.preset.low=12
+option.volumetricSteps.preset.high=32
+option.volumetricSteps.preset.ultra=48
+
+option.clouds.label=Clouds
+option.clouds.tooltip=Volumetric clouds in the sky.
+option.clouds.default=true
+option.clouds.preset.potato=false
+
+option.cloudResolution.label=Cloud resolution
+option.cloudResolution.tooltip=How finely the clouds are drawn, as a share of the screen's resolution: sharper \n  clouds for more time.
+option.cloudResolution.values=25 50 75 100
+option.cloudResolution.default=50
+option.cloudResolution.preset.potato=25
+option.cloudResolution.preset.high=75
+option.cloudResolution.preset.ultra=100
+
+option.cloudSteps.label=Cloud samples
+option.cloudSteps.tooltip=Samples along each view ray through the clouds towards the horizon, half as many \n  overhead: smoother, finer clouds for more time.
+option.cloudSteps.values=20 30 40 60 80
+option.cloudSteps.default=40
+option.cloudSteps.preset.potato=20
+option.cloudSteps.preset.low=30
+option.cloudSteps.preset.high=60
+option.cloudSteps.preset.ultra=80
+
+option.bounceLight.label=Bounce light
+option.bounceLight.tooltip=Light bounced off what is on screen, and the shade in corners (screen-space indirect light).
+option.bounceLight.default=true
+option.bounceLight.preset.potato=false
+option.bounceLight.preset.low=false
+
+option.bloom.label=Bloom
+option.bloom.tooltip=Bright lights glow over what is around them.
+option.bloom.default=true
+option.bloom.preset.potato=false
+
+option.antialiasing.label=Anti-aliasing (TAA)
+option.antialiasing.tooltip=Temporal anti-aliasing: smooth edges, and the dissolves' dither averaged out.
+option.antialiasing.default=true
+
+option.puddles.label=Puddles
+option.puddles.tooltip=Wet ground and puddles in the rain.
+option.puddles.default=true
+option.puddles.preset.potato=false
+
+option.rainDensity.label=Rain density
+option.rainDensity.tooltip=How many raindrops, snowflakes and splashes are drawn, against the default. How hard it \n  rains is the game's.
+option.rainDensity.values=25 50 75 100 150 200
+option.rainDensity.default=100
+option.rainDensity.preset.potato=50
+option.rainDensity.preset.low=75
+
+pipeline.shadows=${sunShadows}
+pipeline.shadowResolution=${shadowResolution}
+pipeline.shadowCascades=${shadowCascades}
+pipeline.flashlightShadow=${flashlightShadow}
+pipeline.lampShadows=${lampShadows}
+pipeline.lampShadowResolution=${lampShadowResolution}
+pipeline.farShadows=${farShadows}
+pipeline.farLamps=${farLamps}
+pipeline.volumetrics=${volumetrics}
+pipeline.clouds=${clouds}
+pipeline.cloudResolution=${cloudResolution}
+pipeline.cloudSteps=${cloudSteps}
+pipeline.indirect=${bounceLight}
+pipeline.bloom=${bloom}
+pipeline.taa=${antialiasing}
+pipeline.puddles=${puddles}
+pipeline.rainDensity=${rainDensity}
+

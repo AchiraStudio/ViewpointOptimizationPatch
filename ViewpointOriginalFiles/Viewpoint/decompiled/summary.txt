@@ -1,0 +1,9 @@
+Summary for J:\SteamLibrary\steamapps\workshop\content\108600\3809306528\mods\Viewpoint\42\media\java\client\Viewpoint.jar
+Decompiled with CFR 0.152
+
+
+viewpoint.light.Torches
+----------------------------
+
+snapshot(viewpoint.core.Frame zombie.characters.IsoGameCharacter int )
+  Unable to fully structure code
