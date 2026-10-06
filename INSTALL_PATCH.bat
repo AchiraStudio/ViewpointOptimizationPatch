@@ -7,10 +7,10 @@ echo       VIEWPOINT UNIFIED PERFORMANCE & ENGINE PATCH v1.1.0
 echo =====================================================================
 echo.
 echo Bundled optimizations included in this patch:
-echo   [1] Eliminates glFinish() stalls and GPU freezes on first-person switch (O key).
-echo   [2] Proactively drains OpenGL fence queues to prevent 100%% iGPU lockups.
-echo   [3] Auto-tunes settings on Intel HD/UHD/Iris Xe to guarantee smooth 60+ FPS.
-echo   [4] Auto-replaces heavy Lanczos floor baking with fast Trilinear filtering.
+echo   [1] Strict GPU-completion tracking eliminating glFinish() pipeline stalls.
+echo   [2] Proactively drains OpenGL fence queues with zero use-after-free risk.
+echo   [3] Universal hardware capability profiling (NVIDIA, AMD, Intel, APU, dGPU).
+echo   [4] Stutter-free floor texture baking optimization (Trilinear/Linear).
 echo   [5] 100%% compatible with Viewpoint Turbo (preserves original Viewpoint.jar).
 echo.
 

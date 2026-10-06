@@ -5,25 +5,26 @@ For Project Zomboid Build 42 (Build 42.21+)
 
 WHAT THIS BUNDLED PATCH DOES:
 -----------------------------
-1. Eliminates glFinish() GPU Pipeline Stalls:
-   - Root cause of the Intel iGPU "100% GPU / freeze on pressing O" bug: Viewpoint's
-     Retirement class calls GL11.glFinish() whenever the fence queue reaches 128
-     or when glFenceSync returns 0.
-   - This patch bounds the fence queue to 32 frames, reclaims older fences proactively,
-     and uses a 4-frame deferred ring buffer fallback if driver sync creation fails.
-   - Result: ZERO CPU/GPU stalls, NO freeze on pressing O.
+1. Strict GPU-Completion Retirement (Safe Fence Drain):
+   - Replaced Viewpoint's full-pipeline glFinish() lockups and eliminated unsafe
+     frame-count-based evictions.
+   - Resources are only freed after verified GPU completion (GL_ALREADY_SIGNALED
+     or GL_CONDITION_SATISFIED).
+   - Uses adaptive microsecond backpressure on oldest fences during queue growth,
+     avoiding pipeline flushes while guaranteeing zero GPU use-after-free.
+   - Self-protecting fallback: if sync fences are unsupported or fail, safely
+     reverts to engine synchronization with diagnostic logging.
 
-2. Safe Render-Thread Hardware Detection & Auto-Tuning:
-   - Probes the active GPU architecture on the Render Thread safely.
-   - For Intel iGPUs (HD/UHD/Iris Xe) & AMD APUs: Automatically applies the Potato
-     profile (Vanilla mode, 128MB floor VRAM, 8-block far LOD, Trilinear filter)
-     so lower-end machines run smoothly at 60+ FPS immediately.
-   - For Dedicated GPUs (RX 9060 XT, RTX series): Replaces heavy Lanczos floor
-     filtering with high-speed Trilinear to eliminate micro-stutters during travel.
+2. Comprehensive GPU Capability Profiling:
+   - Probes active context on the render thread (Vendor, Renderer, GL version, limits, VRAM).
+   - Accurately classifies hardware tiers (LOW_POWER, INTEGRATED, MAINSTREAM, HIGH_END)
+     without brittle substring heuristics.
+   - Defaults unknown hardware to safe, non-destructive behavior.
 
 3. Resampling Overhead Reduction:
-   - Transparently replaces 36-tap Lanczos floor baking filters with high-speed
-     Bilinear filtering on performance profiles, preventing stutter during chunk streaming.
+   - Replaces heavy 36-tap Lanczos floor baking filters with high-speed Linear filtering
+     on performance profiles, preventing stutter during chunk streaming without mid-draw
+     memory reallocations.
 
 4. 100% Integrity & ViewpointTurbo Compatibility:
    - Does NOT modify Viewpoint.jar directly.
