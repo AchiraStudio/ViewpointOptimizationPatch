@@ -32,14 +32,22 @@ public final class SafeRetirement {
     private static Constructor<?> fencedCtor;
 
     // Adaptive queue backpressure tuning
-    private static final int QUEUE_SOFT_CAP = 48;
-    private static final int QUEUE_HARD_CAP = 96;
-    private static final long WAIT_TIMEOUT_NS = 1_000_000L; // 1 ms wait on oldest fence
+    public static final int QUEUE_SOFT_CAP = 48;
+    public static final int QUEUE_HIGH_CAP = 72;
+    public static final int QUEUE_HARD_CAP = 96;
+
+    // Tiered timeouts: 50us under moderate pressure, 200us under high pressure (avoids 1ms CPU stalls)
+    private static final long WAIT_MODERATE_NS = 50_000L;  // 50 microseconds
+    private static final long WAIT_HIGH_NS = 200_000L;     // 200 microseconds
 
     // Diagnostics & stats
     public static long totalBatchesRetired = 0;
     public static long fencesSuccessfullyReclaimed = 0;
     public static long softCapWaitsSatisfied = 0;
+    public static long totalWaitTimeNs = 0;
+    public static int currentQueueDepth = 0;
+    public static int peakQueueDepth = 0;
+    public static double rollingQueueDepth = 0.0;
     private static int consecutiveFenceErrors = 0;
 
     private SafeRetirement() {}
@@ -172,20 +180,29 @@ public final class SafeRetirement {
             totalBatchesRetired++;
 
             // 5. Adaptive queue management & backpressure
-            // Check if queue exceeds soft cap (48)
+            currentQueueDepth = fenced.size();
+            if (currentQueueDepth > peakQueueDepth) {
+                peakQueueDepth = currentQueueDepth;
+            }
+            rollingQueueDepth = (rollingQueueDepth * 0.95) + (currentQueueDepth * 0.05);
+
+            // Level 1: If above soft cap (48), drain non-blocking first
             if (fenced.size() > QUEUE_SOFT_CAP) {
                 freePassedMethod.invoke(self);
             }
 
-            // If still above soft cap, wait specifically on the OLDEST fence
+            // Level 2: If still above soft cap, wait only on the OLDEST fence with tiered microsecond budget
             while (fenced.size() > QUEUE_SOFT_CAP) {
                 Object oldest = fenced.peekFirst();
                 if (oldest == null) break;
 
                 long oldestFence = ((Long) getFenceMethod.invoke(oldest)).longValue();
+                long timeoutNs = (fenced.size() > QUEUE_HIGH_CAP) ? WAIT_HIGH_NS : WAIT_MODERATE_NS;
 
-                // Wait only for the oldest fence (max 1ms)
-                int waitResult = GL32.glClientWaitSync(oldestFence, GL32.GL_SYNC_FLUSH_COMMANDS_BIT, WAIT_TIMEOUT_NS);
+                long startWait = System.nanoTime();
+                int waitResult = GL32.glClientWaitSync(oldestFence, GL32.GL_SYNC_FLUSH_COMMANDS_BIT, timeoutNs);
+                totalWaitTimeNs += (System.nanoTime() - startWait);
+
                 if (waitResult == GL32.GL_ALREADY_SIGNALED || waitResult == GL32.GL_CONDITION_SATISFIED) {
                     // Confirmed complete by GPU! Safe to free.
                     fenced.pollFirst();
@@ -198,8 +215,8 @@ public final class SafeRetirement {
                     PatchLogger.warn("glClientWaitSync failed on fence " + oldestFence);
                     break;
                 } else {
-                    // Timeout: GPU is still actively processing this batch.
-                    // DO NOT FREE! Back off and avoid CPU spin.
+                    // Timeout (50-200us): GPU is still actively processing this batch.
+                    // DO NOT FREE! Back off cleanly without CPU spin or long stall.
                     break;
                 }
             }

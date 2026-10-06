@@ -25,7 +25,7 @@ public final class ProfileManager {
         }
     }
 
-    private static String getLiveSetting(String key) {
+    public static String getLiveSetting(String key) {
         try {
             if (valueMethod == null) {
                 valueMethod = LiveSettings.class.getDeclaredMethod("value", String.class);
@@ -63,6 +63,15 @@ public final class ProfileManager {
             if (getLiveSetting("chunks.cookThreads") == null) {
                 setLiveSetting("chunks.cookThreads", String.valueOf(activeProfile.cookThreads));
             }
+            if (getLiveSetting("chunks.cookingMax") == null) {
+                setLiveSetting("chunks.cookingMax", String.valueOf(activeProfile.cookingMax));
+            }
+            if (getLiveSetting("far.cellJobs") == null) {
+                setLiveSetting("far.cellJobs", String.valueOf(activeProfile.cellJobs));
+            }
+            if (getLiveSetting("far.shellJobs") == null) {
+                setLiveSetting("far.shellJobs", String.valueOf(activeProfile.shellJobs));
+            }
             if (getLiveSetting("far.cellUploadMb") == null) {
                 setLiveSetting("far.cellUploadMb", String.valueOf(activeProfile.cellUploadMb));
             }
@@ -71,6 +80,9 @@ public final class ProfileManager {
             }
             if (getLiveSetting("floors.bakeBudgetMs") == null) {
                 setLiveSetting("floors.bakeBudgetMs", String.valueOf(activeProfile.bakeBudgetMs));
+            }
+            if (getLiveSetting("floors.bakePagesPerFrame") == null) {
+                setLiveSetting("floors.bakePagesPerFrame", String.valueOf(activeProfile.bakePagesPerFrame));
             }
 
             PatchLogger.info("Hardware profile applied cleanly without mid-frame resource disruption.");

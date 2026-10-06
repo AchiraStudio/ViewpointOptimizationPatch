@@ -39,12 +39,10 @@ public final class GpuProfiler {
             PatchLogger.warn("Failed basic OpenGL context string queries: " + t.getMessage(), t);
         }
 
-        // Test sync object availability safely
-        try {
-            // GL32.glFenceSync check
-            syncSupported = checkSyncSupport(rawVersion);
-        } catch (Throwable t) {
-            syncSupported = false;
+        // Real operational test: attempt to place and delete an actual test fence on the active GL context
+        syncSupported = probeLiveSyncSupport();
+        if (!syncSupported) {
+            viewpointpatch.config.SafeMode.disableRetirement("GPU driver failed live GL32 sync object probe");
         }
 
         GpuVendor vendor = GpuVendor.fromStrings(rawVendor, rawRenderer);
@@ -63,7 +61,7 @@ public final class GpuProfiler {
         PatchLogger.info("  Renderer: " + cachedCapabilities.rawRenderer);
         PatchLogger.info("  OpenGL:   " + cachedCapabilities.rawVersion);
         PatchLogger.info("  Tier:     " + cachedCapabilities.tier.name() + " (" + cachedCapabilities.tier.getDescription() + ")");
-        PatchLogger.info("  Sync:     " + (cachedCapabilities.syncSupported ? "Supported (GL32 Fence)" : "UNSUPPORTED"));
+        PatchLogger.info("  Sync:     " + (cachedCapabilities.syncSupported ? "Verified Operational (GL32 Fence)" : "UNSUPPORTED / FAILED PROBE"));
         if (cachedCapabilities.vramMb > 0) {
             PatchLogger.info("  VRAM:     ~" + cachedCapabilities.vramMb + " MB");
         }
@@ -72,18 +70,22 @@ public final class GpuProfiler {
         return cachedCapabilities;
     }
 
-    private static boolean checkSyncSupport(String glVersion) {
-        if (glVersion == null) return false;
+    private static boolean probeLiveSyncSupport() {
         try {
-            // Match major.minor
-            String[] parts = glVersion.trim().split(" ")[0].split("\\.");
-            if (parts.length >= 2) {
-                int major = Integer.parseInt(parts[0]);
-                int minor = Integer.parseInt(parts[1]);
-                return (major > 3) || (major == 3 && minor >= 2);
+            // Place actual live fence sync on current render context
+            long testSync = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+            if (testSync != 0L) {
+                // Non-blocking query to confirm driver supports client wait
+                GL32.glClientWaitSync(testSync, 0, 0L);
+                GL32.glDeleteSync(testSync);
+                return true;
             }
-        } catch (Throwable ignored) {}
-        return true; // Default assume modern OpenGL on PZ B42
+            PatchLogger.warn("Live GL32.glFenceSync returned 0. Driver does not support sync objects.");
+            return false;
+        } catch (Throwable t) {
+            PatchLogger.warn("Live GL32 sync probe threw exception: " + t.getMessage());
+            return false;
+        }
     }
 
     private static int probeVramMb(GpuVendor vendor) {
@@ -168,7 +170,7 @@ public final class GpuProfiler {
                     return GpuTier.LOW_POWER; // RX 550, 6400, etc.
                 } catch (NumberFormatException ignored) {}
             }
-            return GpuTier.MAINSTREAM;
+            return GpuTier.SAFE; // Unrecognized AMD model defaults safely
         }
 
         if (vendor == GpuVendor.NVIDIA) {
@@ -184,10 +186,12 @@ public final class GpuProfiler {
                     if ("RTX".equals(prefix) && ((model >= 3070 && model < 4000) || model >= 4070)) {
                         return GpuTier.HIGH_END;
                     }
-                    return GpuTier.MAINSTREAM;
+                    if ("RTX".equals(prefix) || model >= 960) {
+                        return GpuTier.MAINSTREAM;
+                    }
                 } catch (NumberFormatException ignored) {}
             }
-            return GpuTier.MAINSTREAM;
+            return GpuTier.SAFE; // Unrecognized NVIDIA model defaults safely
         }
 
         return GpuTier.SAFE;

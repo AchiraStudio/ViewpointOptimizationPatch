@@ -34,7 +34,12 @@ public final class FrameTimeController {
         if (frameMs > 1000.0) return;
 
         // Exponential rolling average (smoothing factor alpha = 0.05)
-        rollingAvgMs = (rollingAvgMs * 0.95) + (frameMs * 0.05);
+        if (totalFrames <= 1) {
+            rollingAvgMs = frameMs; // Eliminate startup bias
+        } else {
+            rollingAvgMs = (rollingAvgMs * 0.95) + (frameMs * 0.05);
+        }
+
         if (frameMs > peakFrameMs) {
             peakFrameMs = frameMs;
         }
@@ -48,21 +53,25 @@ public final class FrameTimeController {
         double spikeThreshold = target * 1.35; // e.g. 22.5ms for 60 FPS
         double smoothThreshold = target * 0.90; // e.g. 15.0ms for 60 FPS
 
-        if (frameMs > spikeThreshold) {
-            // Frame hitch / stall detected! Throttle background budgets immediately
+        // Check both CPU frame pacing AND actual GPU queue latency
+        boolean isGpuOverloaded = viewpointpatch.render.SafeRetirement.currentQueueDepth > viewpointpatch.render.SafeRetirement.QUEUE_SOFT_CAP
+                || viewpointpatch.render.SafeRetirement.rollingQueueDepth > 28.0;
+
+        if (frameMs > spikeThreshold || isGpuOverloaded) {
+            // Frame hitch or GPU fence backlog detected! Throttle immediately
             smoothFrameCount = 0;
             cooldownFrames = THROTTLE_COOLDOWN;
             AdaptiveQuality.throttleDown();
-        } else if (frameMs < smoothThreshold) {
-            // Sustained smooth performance
+        } else if (frameMs < smoothThreshold && rollingAvgMs < smoothThreshold && viewpointpatch.render.SafeRetirement.rollingQueueDepth < 16.0) {
+            // Require BOTH current frame AND rolling average AND calm GPU queue for recovery
             smoothFrameCount++;
             if (smoothFrameCount >= STABILIZATION_WINDOW) {
                 smoothFrameCount = 0;
                 AdaptiveQuality.recoverUp();
             }
         } else {
-            // In the nominal zone [smoothThreshold, spikeThreshold]
-            smoothFrameCount = Math.max(0, smoothFrameCount - 1);
+            // Intermittent variance: reset stability accumulator to prevent premature quality increase
+            smoothFrameCount = 0;
         }
     }
 }
