@@ -61,7 +61,7 @@ public final class GpuProfiler {
         PatchLogger.info("  Renderer: " + cachedCapabilities.rawRenderer);
         PatchLogger.info("  OpenGL:   " + cachedCapabilities.rawVersion);
         PatchLogger.info("  Tier:     " + cachedCapabilities.tier.name() + " (" + cachedCapabilities.tier.getDescription() + ")");
-        PatchLogger.info("  Sync:     " + (cachedCapabilities.syncSupported ? "Verified Operational (GL32 Fence)" : "UNSUPPORTED / FAILED PROBE"));
+        PatchLogger.info("  Sync:     " + (cachedCapabilities.syncSupported ? "Verified Operational (Fence Creation & ClientWait Validated)" : "UNSUPPORTED / FAILED PROBE"));
         if (cachedCapabilities.vramMb > 0) {
             PatchLogger.info("  VRAM:     ~" + cachedCapabilities.vramMb + " MB");
         }
@@ -75,9 +75,15 @@ public final class GpuProfiler {
             // Place actual live fence sync on current render context
             long testSync = GL32.glFenceSync(GL32.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             if (testSync != 0L) {
-                // Non-blocking query to confirm driver supports client wait
-                GL32.glClientWaitSync(testSync, 0, 0L);
+                // Non-blocking query to confirm driver supports client wait without failure
+                int waitResult = GL32.glClientWaitSync(testSync, 0, 0L);
                 GL32.glDeleteSync(testSync);
+
+                // GL_WAIT_FAILED (37149) indicates client wait failure on driver
+                if (waitResult == GL32.GL_WAIT_FAILED) {
+                    PatchLogger.warn("Live GL32.glClientWaitSync returned GL_WAIT_FAILED. Sync wait unsupported.");
+                    return false;
+                }
                 return true;
             }
             PatchLogger.warn("Live GL32.glFenceSync returned 0. Driver does not support sync objects.");

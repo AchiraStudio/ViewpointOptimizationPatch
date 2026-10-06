@@ -130,9 +130,12 @@ public final class SafeRetirement {
             return false; // Fall back to vanilla engine retirement
         }
 
+        ArrayDeque<Object> waiting = null;
+        ArrayList<Object> retiredBatch = null;
+
         try {
             ConcurrentLinkedQueue<?> retired = (ConcurrentLinkedQueue<?>) retiredField.get(self);
-            ArrayDeque<Object> waiting = (ArrayDeque<Object>) waitingField.get(self);
+            waiting = (ArrayDeque<Object>) waitingField.get(self);
             ArrayDeque<Object> fenced = (ArrayDeque<Object>) fencedField.get(self);
             Object fences = fencesField.get(self);
 
@@ -142,19 +145,19 @@ public final class SafeRetirement {
                 waiting.addLast(item);
             }
 
-            // 2. Collect items whose stamp <= l into current frame batch
-            ArrayList<Object> batch = new ArrayList<Object>();
+            // 2. Collect Retired objects whose stamp <= l into pending list (retaining wrappers for atomic rollback)
+            retiredBatch = new ArrayList<Object>();
             while (!waiting.isEmpty()) {
                 Object peek = waiting.peekFirst();
                 long stamp = ((Long) getStampMethod.invoke(peek)).longValue();
                 if (stamp <= l) {
-                    batch.add(getThingMethod.invoke(waiting.pollFirst()));
+                    retiredBatch.add(waiting.pollFirst());
                 } else {
                     break;
                 }
             }
 
-            if (batch.isEmpty()) {
+            if (retiredBatch.isEmpty()) {
                 return true; // Nothing to retire for this frame
             }
 
@@ -166,12 +169,22 @@ public final class SafeRetirement {
 
             if (fenceId == 0L) {
                 consecutiveFenceErrors++;
-                PatchLogger.warn("glFenceSync returned 0 (consecutive: " + consecutiveFenceErrors + "). Retaining resources safely without premature free.");
+                PatchLogger.warn("glFenceSync returned 0 (consecutive: " + consecutiveFenceErrors + "). Restoring batch to waiting queue and delegating to engine sync.");
                 if (consecutiveFenceErrors >= 3) {
                     SafeMode.disableRetirement("Fence creation returned 0 repeatedly. Driver lacks reliable GL32 sync support.");
                 }
-                // Do NOT free early. Return false so vanilla retirement executes its safe synchronization.
+                // ATOMIC RESTORATION: Put all Retired entries back into waiting in exact original order
+                for (int i = retiredBatch.size() - 1; i >= 0; i--) {
+                    waiting.addFirst(retiredBatch.get(i));
+                }
+                // Return false so vanilla retirement executes safely with complete queue
                 return false;
+            }
+
+            // Unwrap things only after fence creation is confirmed non-zero
+            ArrayList<Object> batch = new ArrayList<Object>(retiredBatch.size());
+            for (Object retObj : retiredBatch) {
+                batch.add(getThingMethod.invoke(retObj));
             }
 
             consecutiveFenceErrors = 0;
@@ -237,6 +250,12 @@ public final class SafeRetirement {
             return true; // Successfully and safely handled; skip vanilla stall
         } catch (Throwable t) {
             FailureTracker.recordFailure("Retirement", t);
+            // In case of exception, restore any polled entries back into waiting queue
+            if (retiredBatch != null && !retiredBatch.isEmpty() && waiting != null) {
+                for (int i = retiredBatch.size() - 1; i >= 0; i--) {
+                    waiting.addFirst(retiredBatch.get(i));
+                }
+            }
             return false; // Safely fall back to original Viewpoint method
         }
     }
