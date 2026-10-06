@@ -1128,3 +1128,12 @@ vam.sprint.mode=Double-tap Shift
 view.thirdPersonVerticalFov=60
 view.verticalFov=85
 vpinteriors.potatoModels=true
+
+# --- Viewpoint Optimization Patch v2 Configuration ---
+patch.enabled=true
+patch.safeMode=false
+optimization.retirement=true
+optimization.floorFilter=true
+optimization.adaptiveBudget=true
+optimization.dynamicLod=true
+patch.targetFps=60

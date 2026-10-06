@@ -2,8 +2,8 @@
 -- Build 42 Client Helper
 
 local function onGameStart()
-    print("[ViewpointOptimizationPatch] Successfully initialized v1.0.0.")
-    print("[ViewpointOptimizationPatch] Optimizations active: FloorSlice 8-tier vram capping, Fence drain retirement, zero-alloc bakes, optimized volumetric fog shaders.")
+    print("[ViewpointOptimizationPatch] v2.0.0 Universal GPU & Adaptive Performance Patch active.")
+    print("[ViewpointOptimizationPatch] Strict GPU-completion retirement, hardware capability profiling, adaptive budget controller, safe texture baking.")
 end
 
 Events.OnGameStart.Add(onGameStart)
